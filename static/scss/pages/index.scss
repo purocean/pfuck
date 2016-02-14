@@ -1,0 +1,48 @@
+.operate {
+    text-align: center;
+
+    &>* {
+        display: inline-block;
+        vertical-align: text-top;
+    }
+
+    textarea {
+        width: 15em;
+        min-height: initial;
+    }
+}
+
+.log-box {
+    text-align: center;
+
+    .log {
+        width: 31%;
+        margin: 12px 6px;
+        display: inline-block;
+
+        .log-id {
+            position: absolute;
+            top: 0;
+            left: 0;
+            margin: 0;
+            display: block;
+            background-color: #eee;
+            padding: 4px 10px;
+            font-size: 16px;
+            font-weight: normal;
+            color: #333;
+            border: 1px #ddd solid;
+            border-radius: 0 2px 2px 2px;
+        }
+
+        .log-info {
+            .log-title {
+                line-height: 3em;
+            }
+
+            .log-operate {
+                float: right;
+            }
+        }
+    }
+}
