@@ -5,3 +5,5 @@ __pycache__
 *.sublime-project
 build
 *.log
+
+data/*.json

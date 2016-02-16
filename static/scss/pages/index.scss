@@ -12,10 +12,10 @@
     }
 }
 
-.log-box {
+#logs {
     text-align: center;
 
-    .log {
+    .log-wrapper {
         width: 31%;
         margin: 12px 6px;
         display: inline-block;
@@ -42,6 +42,36 @@
 
             .log-operate {
                 float: right;
+            }
+        }
+
+        .log {
+            text-align: left;
+            background: #f8f8f8;
+            overflow: auto;
+            width: 100%;
+            height: 20em;
+            border-radius: 5px;
+            border: 2px green solid;
+            padding: 4px;
+            font-size: 12px;
+
+            p {
+                margin: 0;
+            }
+        }
+
+        .input-form {
+            clear: both;
+
+            input {
+                width: 85%;
+                display: inline-block;
+            }
+
+            button {
+                width: 14%;
+                margin: 0;
             }
         }
     }

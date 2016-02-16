@@ -18,6 +18,10 @@ includeFiles = [(file, file) for file in [
     'static/js/foundation.min.js',
     'static/js/ycom.js',
 
+    'data/.keep',
+
+    'log/.keep',
+
     'tpl/index.html',
 ]]
 

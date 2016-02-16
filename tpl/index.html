@@ -16,84 +16,229 @@
     <script src="static/js/ycom.js"></script>
 </head>
 <body>
-    <div class="main">
-        <div class="box"><h3>{{htmlTitle}}</h3></div>
-        <div class="box operate">
-            <textarea class="auto-height" name="phone" id="" rows="1" placeholder="手机号码，多个分行"></textarea>
-            <button class="button">全部开始</button>
-        </div>
-        <div class="log-box">
-            <div id="log-1" class="box log">
-                <div class="log-info">
-                    <span class="log-id">#1</span>
-                    <span class="log-title">18888888888</span>
-                    <div class="log-operate">
-                        <button class="button">停止</button>
-                    </div>
-                </div>
-                <textarea name="log_1" id="log_1" rows="10"></textarea>
-            </div>
-            <div id="log-1" class="box log">
-                <div class="log-info">
-                    <span class="log-id">#1</span>
-                    <span class="log-title">18888888888</span>
-                    <div class="log-operate">
-                        <button class="button">停止</button>
-                    </div>
-                </div>
-                <textarea name="log_1" id="log_1" rows="10"></textarea>
-            </div>
-            <div id="log-1" class="box log">
-                <div class="log-info">
-                    <span class="log-id">#1</span>
-                    <span class="log-title">18888888888</span>
-                    <div class="log-operate">
-                        <button class="button">停止</button>
-                    </div>
-                </div>
-                <textarea name="log_1" id="log_1" rows="10"></textarea>
-            </div>
-            <div id="log-1" class="box log">
-                <div class="log-info">
-                    <span class="log-id">#1</span>
-                    <span class="log-title">18888888888</span>
-                    <div class="log-operate">
-                        <button class="button">停止</button>
-                    </div>
-                </div>
-                <textarea name="log_1" id="log_1" rows="10"></textarea>
-            </div>
-            <div id="log-1" class="box log">
-                <div class="log-info">
-                    <span class="log-id">#1</span>
-                    <span class="log-title">18888888888</span>
-                    <div class="log-operate">
-                        <button class="button">停止</button>
-                    </div>
-                </div>
-                <textarea name="log_1" id="log_1" rows="10"></textarea>
-            </div>
-            <div id="log-1" class="box log">
-                <div class="log-info">
-                    <span class="log-id">#1</span>
-                    <span class="log-title">18888888888</span>
-                    <div class="log-operate">
-                        <button class="button">停止</button>
-                    </div>
-                </div>
-                <textarea name="log_1" id="log_1" rows="10"></textarea>
-            </div>
-
-        </div>
+<div class="main">
+    <div class="box"><h3>{{htmlTitle}}</h3></div>
+    <div class="box operate">
+        <textarea class="auto-height" name="phone" id="phone" rows="1" placeholder="手机号码，多个分行"></textarea>
+        <button class="button" data-run="false" id="run-all">开始</button>
     </div>
+    <div id="logs"></div>
+</div>
+
+<div id="log-tpl" style="display: none">
+    <div id="log-wrapper_{id}" class="box log-wrapper">
+        <div class="log-info">
+            <span class="log-id">#{id}</span>
+            <span class="log-title">{phoneNum}</span>
+            <div class="log-operate">
+                <button data-id="{id}" data-phone="{phoneNum}" data-run="false" class="button run">开始</button>
+            </div>
+        </div>
+        <form class="input-form" data-id="{id}">
+            <input type="hidden" name="id", value="{id}" />
+            <input type="hidden" name="key", value="vcode" />
+            <input type="text" name="value" placeholder="输入内容" />
+            <button class="button">提交</button>
+        </form>
+        <div data-offset="-1" data-id="{id}" id="log_{id}" class="log"></div>
+    </div>
+</div>
 
 <script>
+logTimer = 0;
+logQuery = {};
+
+getLog = function() {
+    logTimer = setInterval(function(){
+        $('#logs .log').each(function(index, el) {
+            logQuery[$(this).data('id')] = $(this).data('offset');
+        });
+
+        $.ajax({
+            url: '/log',
+            type: 'get',
+            dataType: 'json',
+            timeout: 1000,
+            data: {query: JSON.stringify(logQuery)}
+        })
+        .done(function(result) {
+            for (var x in result) {
+                var html = '';
+                var logBox = $('#log_' + x);
+
+                if (logBox.length > 0) {
+                    for (var i in result[x]['logs']) {
+                        html += '<p>'+ Ycom.htmlEncode(result[x]['logs'][i]) +'</p>';
+                    }
+
+                    logBox.data('offset', result[x]['offset'] + result[x]['logs'].length);
+                    logBox.append(html);
+                    logBox.scrollTop(logBox[0].scrollHeight);
+                }
+            }
+        })
+        .fail(function() {
+            alert('网络错误');
+        })
+        .always(function() {
+        });
+    }, 500);
+}
+
+startAll = function() {
+    runButtons = $('#logs .run');
+    for (var i = 0; i < runButtons.length; ++i) {
+        setTimeout((function(i) {
+            return function() {
+                var button = runButtons.get(i);
+                if (!$(button).data('run')) {
+                    runButtons.get(i).click();
+                }
+            };
+        })(i), i * 100);
+    }
+
+    clearInterval(logTimer);
+    getLog();
+}
+
+stopAll = function() {
+    runButtons = $('#logs .run');
+    for (var i = 0; i < runButtons.length; ++i) {
+        setTimeout((function(i) {
+            return function() {
+                var button = runButtons.get(i);
+                if ($(button).data('run')) {
+                    runButtons.get(i).click();
+                }
+            };
+        })(i), i * 100);
+    }
+
+    clearInterval(logTimer);
+}
+
+startOne = function(id, phoneNum) {
+    $.ajax({
+        url: '/start',
+        type: 'post',
+        dataType: 'json',
+        timeout: 500000,
+        data: {id: id, phoneNum: phoneNum},
+    })
+    .done(function(result) {
+    })
+    .fail(function() {
+        alert('网络错误');
+    })
+    .always(function() {
+    });
+
+
+    $('#run-all').data('run', true);
+    $('#run-all').text('停止');
+}
+
+communicate = function(id, key, value) {
+    $.ajax({
+        url: '/communicate',
+        type: 'post',
+        dataType: 'json',
+        timeout: 1000,
+        data: {id: id, key: key, value: value},
+    })
+    .done(function(result) {
+    })
+    .fail(function() {
+        alert('网络错误');
+    })
+    .always(function() {
+    });
+}
+
+stopOne = function(id) {
+    communicate(id, 'run', 'false');
+
+    var runOne = false;
+    var runButtons = $('#logs .run');
+
+    for (var i = 0; i < runButtons.length; ++i) {
+        runOne = $(runButtons.get(i)).data('run');
+        if (runOne) {
+            break;
+        }
+    }
+
+    if (!runOne) {
+        $('#run-all').data('run', false);
+        $('#run-all').text('开始');
+        // clearInterval(logTimer);
+    }
+}
+
 $(function(){
+    logBoxTpl = $('#log-tpl').html();
+
     $('.auto-height').bind('input propertychange change', function(e){
           $(this).height(0);
           $(this).outerHeight($(this)[0].scrollHeight+2);
     });
+
+    $('#run-all').click(function(event) {
+        if ($(this).data('run')) {
+            stopAll();
+        } else {
+            var phoneNums = $.trim($('#phone').val()).split('\n');
+
+            html = '';
+            for (var i = 0; i < phoneNums.length; ++i) {
+                if ($.trim(phoneNums[i])) {
+                    html += Ycom.formatStr(logBoxTpl, {
+                        id: i + 1,
+                        phoneNum: phoneNums[i],
+                    });
+                }
+            }
+
+            $('#logs').html(html);
+            startAll();
+        }
+    });
+
+    $(document).on('click', '.run', function(event) {
+        if ($(this).data('run')) {
+            $(this).data('run', false);
+            $(this).text('开始');
+
+            stopOne($(this).data('id'));
+        } else {
+            $(this).data('run', true);
+            $(this).text('停止');
+
+            startOne($(this).data('id'), $(this).data('phone'));
+        }
+    });
+
+    $(document).on('submit', '.input-form', function(event) {
+        $.ajax({
+            url: '/communicate',
+            type: 'post',
+            dataType: 'json',
+            timeout: 1000,
+            data: $(this).serialize()
+        })
+        .done(function(result) {
+        })
+        .fail(function() {
+            alert('网络错误');
+        })
+        .always(function() {
+        });
+
+        return false;
+    });
 });
+
 </script>
 </body>
 </html>
