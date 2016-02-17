@@ -21,7 +21,7 @@ class Register(work.Work.Work):
         self.__phoneNum = phoneNum
         self.__formName = ''.join(random.sample(string.ascii_letters+string.digits, 5))
         self.__formPassword = '66666666'
-        self.__http = None;
+        self.__http = Httplib();
         self.__accountId = ''
 
         self.__reg = reg
@@ -50,17 +50,14 @@ class Register(work.Work.Work):
 
         self.log('****开始注册****')
 
+        vcode = self.getVcode()
+        print(vcode)
+
         http = Httplib()
 
         vResult = http.post(
             'http://liuliang.easy8.com.cn/wdExternal/registerAccountInfo',
-            {
-                'phoneNumber': self.__phoneNum,
-                'randomNumber': self.getVcode(),
-                'ot': '1',
-                'accountName': self.__formName,
-                'accountPwd': self.__formPassword,
-            }
+            'phoneNumber='+ self.__phoneNum +'&randomNumber='+ vcode +'&ot=1&accountName='+ self.__formName +'&accountPwd=' + self.__formPassword
         )
 
         if vResult:
@@ -88,64 +85,59 @@ class Register(work.Work.Work):
         url = 'http://liuliang.easy8.com.cn/wdExternal/getRandom?phoneNumber='+ self.__phoneNum +'&ot=1&accountName=&flowSize=&linkUrl='
         http.get(url)
 
-    @checkRun
     def getVcode(self):
         '''获取验证码'''
         self.log('****提取验证码****')
         flag = False
-        for c in range(1, 50):
+        vcode = None
+        for c in range(1, 200):
             if not self.isRun():
                 break
 
-            vcode = None
             vcode = utils.vcode.get(self.id, self.__phoneNum)
 
             if vcode:
                 self.log(vcode)
-                return vcode
                 break
 
             self.log('*')
             time.sleep(1)
+        return vcode
 
     @checkRun
     def login(self):
         self.log('****登录账户****')
 
-        if self.__http == None:
-            http = Httplib()
+        resultStr = self.__http.post('http://liuliang.easy8.com.cn/wdExternal/login/'+ self.__phoneNum +'/'+ self.__formPassword +'?randomCode=&count=0')
+        result = json.loads(resultStr)
 
-            resultStr = http.post('http://liuliang.easy8.com.cn/wdExternal/login/'+ self.__phoneNum +'/'+ self.__formPassword +'?randomCode=&count=0')
-            result = json.loads(resultStr)
+        self.log(result['desc'])
 
-            self.log(result['desc'])
-            if result['status'] == '0000':
-                self.__http = http;
-                self.__accountId = result['data'][0]['ACCOUNT_ID']
+        if result['status'] == '0000':
+            self.__accountId = result['data'][0]['ACCOUNT_ID']
 
-                self.log('ACCOUNT_ID: ' + self.__accountId)
+            self.log('ACCOUNT_ID: ' + self.__accountId)
 
-                return self.__http
-            else:
-                return False
+            return True
         else:
-            return self.__http
+            return False
 
     @checkRun
     def getGift(self):
         self.log('****兑换积分500=>50MiB****')
         url = 'http://liuliang.easy8.com.cn/flowGasStn/saveAccountGift/Q00484528/10005/500.jsonp'
 
-        http = self.login()
-        if http != False:
-            resultStr = http.get(url);
+        self.login()
+        if self.__http != None:
+            resultStr = self.__http.get(url);
             result = json.loads(resultStr)
 
             self.log(result['desc'])
 
     @checkRun
     def makeRedBagLink(self):
-        http = self.login()
+        self.login()
+        http = self.__http
         if http != False and http != None:
             self.log('****创建红包链接****')
 

@@ -91,7 +91,6 @@ getLog = function() {
             }
         })
         .fail(function() {
-            alert('网络错误');
         })
         .always(function() {
         });
@@ -150,7 +149,7 @@ startOne = function(id, phoneNum) {
         }
     })
     .fail(function() {
-        alert('网络错误');
+        console.log('执行有误');
     })
     .always(function() {
     });

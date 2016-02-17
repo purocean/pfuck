@@ -69,7 +69,8 @@ def communicate():
 
 @route('/saveConfig', method="POST")
 def saveConfig():
-    for key, value in request.POST.items():
+    args = request.POST.decode('utf-8')
+    for key, value in args.items():
         configs.custom.set(key, value)
 
     return {
