@@ -19,7 +19,7 @@
 <div class="main">
     <div class="box config">
         <h3>{{htmlTitle}}</h3>
-        <form id="config-form">
+        <form id="config-form" accept-charset="GBK">
             <label>短信文件路径：<input type="text" name="smsFile" checked value="{{configsSmsFile}}" /></label>
 
             <button class="button">保存</button>
@@ -27,14 +27,11 @@
     </div>
     <div class="box operate">
         <form id="func-form">
-            <label><input type="checkbox" name="reg" checked />注册</label>
-            <label><input type="checkbox" name="getGift" checked />领取积分</label>
-            <label><input type="checkbox" name="makeRedBagLink" checked />创建红包链接</label>
             <label><input type="checkbox" name="fetchVcode" checked />需要获取验证码</label>
         </form>
-        <textarea class="auto-height" name="phone" id="phone" rows="1" placeholder="手机号码，多个分行"></textarea>
+        <textarea class="auto-height" name="links" id="links" rows="1" placeholder="红包链接队列，多个分行"></textarea>
+        <input type="number" name="phone" id="phone" placeholder="电话号码" />
         <button class="button" data-run="false" id="run-all">开始</button>
-        <a target="_blank" href="/getRedBag">批量领红包</a>
     </div>
     <div id="logs"></div>
 </div>
@@ -131,13 +128,14 @@ stopAll = function() {
     // clearInterval(logTimer);
 }
 
-startOne = function(id, phoneNum) {
+startOne = function(id, phoneNum, links) {
     data = $('#func-form').serializeJson();
     data.id = id;
     data.phoneNum = phoneNum;
+    data.links = links
 
     $.ajax({
-        url: '/start',
+        url: '/startRedBag',
         type: 'post',
         dataType: 'json',
         timeout: 500000,
@@ -215,7 +213,7 @@ $(function(){
             for (var i = 0; i < phoneNums.length; ++i) {
                 if ($.trim(phoneNums[i])) {
                     html += Ycom.formatStr(logBoxTpl, {
-                        id: i + 1,
+                        id: i + 100,
                         phoneNum: phoneNums[i],
                     });
                 }
@@ -236,7 +234,7 @@ $(function(){
             $(this).data('run', true);
             $(this).text('停止');
 
-            startOne($(this).data('id'), $(this).data('phone'));
+            startOne($(this).data('id'), $(this).data('phone'), $('#links').val());
         }
     });
 

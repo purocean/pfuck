@@ -1,5 +1,6 @@
 # coding: utf-8
 import os
+import re
 import csv
 import json
 
@@ -12,8 +13,8 @@ smsFile = configs.custom.get('smsFile', 'sms.txt')
 def get(workId, phoneNumber):
     vcodeFromCommunicate = configs.communicate.get(workId, 'vcode')
 
-    if vcodeFromCommunicate:
-        configs.communicate.set(workId, 'lastVcode', vcodeFromCommunicate)
+    if vcodeFromCommunicate != None and vcodeFromCommunicate != '':
+        configs.communicate.set(workId, 'vcode', None)
         return vcodeFromCommunicate;
     else:
         return getFromSmsFile(workId, phoneNumber)

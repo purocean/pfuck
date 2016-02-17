@@ -23,6 +23,7 @@ includeFiles = [(file, file) for file in [
     'log/.keep',
 
     'tpl/index.html',
+    'tpl/getRedBag.html',
 ]]
 
 includeFiles.append(('build_extra_files/msvcr100.dll', 'msvcr100.dll'));

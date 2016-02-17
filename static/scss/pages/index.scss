@@ -12,7 +12,9 @@
         vertical-align: text-top;
     }
 
-    textarea {
+    textarea,
+    input[type=text],
+    input[type=number] {
         width: 15em;
         min-height: initial;
     }
@@ -64,6 +66,7 @@
 
             p {
                 margin: 0;
+                white-space: nowrap;
             }
         }
 
