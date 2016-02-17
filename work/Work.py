@@ -1,25 +1,25 @@
 # coding: utf-8
 
-import time
-
 import configs.communicate
 
 from utils import log
+
+def checkRun(fn):
+    def wrapper(self, *args, **kwds):
+        if self.isRun():
+            fn(self, *args, **kwds)
+    return wrapper
 
 class Work:
     def __init__(self, workId):
         self.id = workId
 
-        configs.communicate.clear(self.id)
+        configs.communicate.set(self.id, 'run', 'true')
+        configs.communicate.set(self.id, 'vcode', None)
 
-    def checkRun(self):
-        return configs.communicate.get(self.id, 'run') == 'false';
+    def isRun(self):
+        return configs.communicate.get(self.id, 'run') != 'false'
 
     def log(self, *args, **kwgs):
         buf = "".join(args)
-        if 'prefix' not in kwgs:
-            buf = '#' + self.id + '*' + time.strftime('%Y-%m-%d %H:%M:%S >··',time.localtime(time.time())) + buf
-        else:
-            del kwgs['prefix']
-
         log.write(self.id, buf)

@@ -14,7 +14,7 @@ monkey.patch_all()
 
 port = '8099'
 
-# webbrowser.open("http://127.0.0.1:" + port)
+webbrowser.open("http://127.0.0.1:" + port)
 
 bottle.debug(configs.main.DEBUG)
 bottle.run(port=port, server='gevent')

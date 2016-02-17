@@ -17,8 +17,21 @@
 </head>
 <body>
 <div class="main">
-    <div class="box"><h3>{{htmlTitle}}</h3></div>
+    <div class="box config">
+        <h3>{{htmlTitle}}</h3>
+        <form id="config-form">
+            <label>短信文件路径：<input type="text" name="smsFile" checked value="{{configsSmsFile}}" /></label>
+
+            <button class="button">保存</button>
+        </form>
+    </div>
     <div class="box operate">
+        <form id="func-form">
+            <label><input type="checkbox" name="reg" checked />注册</label>
+            <label><input type="checkbox" name="getGift" checked />领取积分</label>
+            <label><input type="checkbox" name="makeRedBagLink" checked />创建红包链接</label>
+            <label><input type="checkbox" name="fetchVcode" checked />需要获取验证码</label>
+        </form>
         <textarea class="auto-height" name="phone" id="phone" rows="1" placeholder="手机号码，多个分行"></textarea>
         <button class="button" data-run="false" id="run-all">开始</button>
     </div>
@@ -82,7 +95,7 @@ getLog = function() {
         })
         .always(function() {
         });
-    }, 500);
+    }, 1000);
 }
 
 startAll = function() {
@@ -109,24 +122,32 @@ stopAll = function() {
             return function() {
                 var button = runButtons.get(i);
                 if ($(button).data('run')) {
-                    runButtons.get(i).click();
+                    button.click();
                 }
             };
         })(i), i * 100);
     }
 
-    clearInterval(logTimer);
+    // clearInterval(logTimer);
 }
 
 startOne = function(id, phoneNum) {
+    data = $('#func-form').serializeJson();
+    data.id = id;
+    data.phoneNum = phoneNum;
+
     $.ajax({
         url: '/start',
         type: 'post',
         dataType: 'json',
         timeout: 500000,
-        data: {id: id, phoneNum: phoneNum},
+        data: data,
     })
     .done(function(result) {
+        if (result.status == 'ok') {
+            console.log(result.id)
+            $('.run[data-id='+ result.id +']').click();
+        }
     })
     .fail(function() {
         alert('网络错误');
@@ -228,6 +249,26 @@ $(function(){
             data: $(this).serialize()
         })
         .done(function(result) {
+        })
+        .fail(function() {
+            alert('网络错误');
+        })
+        .always(function() {
+        });
+
+        return false;
+    });
+
+    $('#config-form').submit(function(event) {
+        $.ajax({
+            url: '/saveConfig',
+            type: 'post',
+            dataType: 'json',
+            timeout: 1000,
+            data: $(this).serialize()
+        })
+        .done(function(result) {
+            alert(result.info)
         })
         .fail(function() {
             alert('网络错误');

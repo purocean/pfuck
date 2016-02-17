@@ -1,6 +1,12 @@
+.config {
+    padding-left: 25%;
+    padding-right: 25%;
+}
+
 .operate {
     text-align: center;
 
+    &>form>*,
     &>* {
         display: inline-block;
         vertical-align: text-top;
