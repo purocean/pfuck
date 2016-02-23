@@ -3,6 +3,8 @@
 import os
 import json
 
+import configs.common
+
 dataPath = os.getcwd() + '/data/'
 
 def read(fileName):

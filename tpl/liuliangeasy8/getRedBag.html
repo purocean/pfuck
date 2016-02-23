@@ -9,17 +9,20 @@
     <meta content="black" name="apple-mobile-web-app-status-bar-style" />
     <meta name="theme-color" content="#FFFFFF" />
     <title>{{htmlTitle}}}</title>
-    <link rel="stylesheet" href="static/css/foundation.min.css" type="text/css" media="screen" />
-    <link rel="stylesheet" href="static/css/style.css" type="text/css" media="screen" />
-    <script src="static/js/jquery-1.12.0.min.js"></script>
-    <script src="static/js/foundation.min.js"></script>
-    <script src="static/js/ycom.js"></script>
+    <link rel="stylesheet" href="/static/css/foundation.min.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="/static/css/style.css" type="text/css" media="screen" />
+    <script src="/static/js/jquery-1.12.0.min.js"></script>
+    <script src="/static/js/foundation.min.js"></script>
+    <script src="/static/js/ycom.js"></script>
 </head>
-<body>
+<body class="{{appName}}">
+<script>
+    appName = '{{appName}}';
+</script>
 <div class="main">
     <div class="box config">
         <h3>{{htmlTitle}}</h3>
-        <form id="config-form">
+        <form id="config-form" accept-charset="GBK">
             <label>短信文件路径：<input type="text" name="smsFile" checked value="{{configsSmsFile}}" /></label>
 
             <button class="button">保存</button>
@@ -27,14 +30,11 @@
     </div>
     <div class="box operate">
         <form id="func-form">
-            <label><input type="checkbox" name="reg" checked />注册</label>
-            <label><input type="checkbox" name="getGift" checked />领取积分</label>
-            <label><input type="checkbox" name="makeRedBagLink" checked />创建红包链接</label>
             <label><input type="checkbox" name="fetchVcode" checked />需要获取验证码</label>
         </form>
-        <textarea class="auto-height" name="phone" id="phone" rows="1" placeholder="手机号码，多个分行"></textarea>
+        <textarea class="auto-height" name="links" id="links" rows="1" placeholder="红包链接队列，多个分行"></textarea>
+        <input type="number" name="phone" id="phone" placeholder="电话号码" />
         <button class="button" data-run="false" id="run-all">开始</button>
-        <a target="_blank" href="/getRedBag">批量领红包</a>
     </div>
     <div id="logs"></div>
 </div>
@@ -50,6 +50,7 @@
         </div>
         <form class="input-form" data-id="{id}">
             <input type="hidden" name="id", value="{id}" />
+            <input type="hidden" name="app", value="{{appName}}" />
             <input type="hidden" name="key", value="vcode" />
             <input type="text" name="value" placeholder="输入内容" />
             <button class="button">提交</button>
@@ -131,13 +132,14 @@ stopAll = function() {
     // clearInterval(logTimer);
 }
 
-startOne = function(id, phoneNum) {
+startOne = function(id, phoneNum, links) {
     data = $('#func-form').serializeJson();
     data.id = id;
     data.phoneNum = phoneNum;
+    data.links = links
 
     $.ajax({
-        url: '/start',
+        url: '/' + appName + '/startRedBag',
         type: 'post',
         dataType: 'json',
         timeout: 500000,
@@ -166,7 +168,7 @@ communicate = function(id, key, value) {
         type: 'post',
         dataType: 'json',
         timeout: 1000,
-        data: {id: id, key: key, value: value},
+        data: {app: appName, id: id, key: key, value: value},
     })
     .done(function(result) {
     })
@@ -215,7 +217,7 @@ $(function(){
             for (var i = 0; i < phoneNums.length; ++i) {
                 if ($.trim(phoneNums[i])) {
                     html += Ycom.formatStr(logBoxTpl, {
-                        id: i + 1,
+                        id: i + 100,
                         phoneNum: phoneNums[i],
                     });
                 }
@@ -236,7 +238,7 @@ $(function(){
             $(this).data('run', true);
             $(this).text('停止');
 
-            startOne($(this).data('id'), $(this).data('phone'));
+            startOne($(this).data('id'), $(this).data('phone'), $('#links').val());
         }
     });
 

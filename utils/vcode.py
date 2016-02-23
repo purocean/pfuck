@@ -5,26 +5,26 @@ import csv
 import json
 
 import configs.communicate
-import configs.custom
+import configs.common
 import utils.log
 
-smsFile = configs.custom.get('smsFile', 'sms.txt')
+smsFile = configs.common.get('smsFile', 'sms.txt')
 
-def get(workId, phoneNumber):
-    vcodeFromCommunicate = configs.communicate.get(workId, 'vcode')
+def get(appName, workId, phoneNumber):
+    vcodeFromCommunicate = configs.communicate.get(appName, workId, 'vcode')
 
     if vcodeFromCommunicate != None and vcodeFromCommunicate != '':
-        configs.communicate.set(workId, 'vcode', None)
+        configs.communicate.set(appName, workId, 'vcode', None)
         return vcodeFromCommunicate;
     else:
-        return getFromSmsFile(workId, phoneNumber)
+        return getFromSmsFile(appName, workId, phoneNumber)
 
-def getFromSmsFile(workId, phoneNumber):
+def getFromSmsFile(appName, workId, phoneNumber):
     if not os.path.isfile(smsFile):
-        utils.log.write(workId, '错误：文件 ' + smsFile + ' 不存在！')
+        utils.log.write(appName, workId, '错误：文件 ' + smsFile + ' 不存在！')
         return False
 
-    lastVcode = configs.communicate.get(workId, 'lastVcode')
+    lastVcode = configs.communicate.get(appName, workId, 'lastVcode')
 
     with open(smsFile, 'r') as f:
         reader = list(csv.reader(f))
@@ -41,7 +41,7 @@ def getFromSmsFile(workId, phoneNumber):
             break
 
     if flag:
-        configs.communicate.set(workId, 'lastVcode', vcode[0])
+        configs.communicate.set(appName, workId, 'lastVcode', vcode[0])
 
         return vcode[0]
     else:

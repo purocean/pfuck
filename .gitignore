@@ -4,8 +4,9 @@ __pycache__
 *.sublime-workspace
 *.sublime-project
 build
+dist
 *.log
 
 link.txt
 
-data/*.json
+data/**/*.json

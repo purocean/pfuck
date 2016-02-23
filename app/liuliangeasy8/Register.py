@@ -5,18 +5,20 @@ import json
 import random
 import string
 
-import work.Work
-from work.Work import checkRun
+import core.Work
+from core.Work import checkRun
 
 from utils.httplib import Httplib
 import utils.vcode
 
 import configs.communicate
 
-class Register(work.Work.Work):
+class Register(core.Work.Work):
 
-    def __init__(self, workId, phoneNum, reg = True, getGift = True, makeRedBagLink = True, fetchVcode = True):
-        super(Register, self).__init__(workId);
+    def __init__(self, appName, workId, phoneNum, reg = True, getGift = True, makeRedBagLink = True, fetchVcode = True):
+        super(Register, self).__init__(appName, workId)
+
+        configs.communicate.set(self.appName, self.id, 'vcode', None)
 
         self.__phoneNum = phoneNum
         self.__formName = ''.join(random.sample(string.ascii_letters+string.digits, 5))
@@ -94,7 +96,7 @@ class Register(work.Work.Work):
             if not self.isRun():
                 break
 
-            vcode = utils.vcode.get(self.id, self.__phoneNum)
+            vcode = utils.vcode.get(self.appName, self.id, self.__phoneNum)
 
             if vcode:
                 self.log(vcode)
@@ -181,5 +183,6 @@ class Register(work.Work.Work):
                     self.saveLink(link)
 
     def saveLink(self, link):
-        with open('link.txt', 'a') as f:
+        file = 'data/'+ self.appName +'/link.txt';
+        with open(file, 'a') as f:
             print(link, file=f)

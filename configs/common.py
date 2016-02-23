@@ -2,7 +2,7 @@
 
 from utils import storage
 
-configFile = 'config.json'
+configFile = 'common/config.json'
 
 def get(key, default = None):
     data = storage.read(configFile)

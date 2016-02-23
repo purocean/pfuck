@@ -1,8 +1,7 @@
 # coding: utf-8
 
-import configs.communicate
-
 from utils import log
+import configs.communicate
 
 def checkRun(fn):
     def wrapper(self, *args, **kwds):
@@ -11,15 +10,15 @@ def checkRun(fn):
     return wrapper
 
 class Work:
-    def __init__(self, workId):
+    def __init__(self, appName, workId):
         self.id = workId
+        self.appName = appName
 
-        configs.communicate.set(self.id, 'run', 'true')
-        configs.communicate.set(self.id, 'vcode', None)
+        configs.communicate.set(self.appName, self.id, 'run', 'true')
 
     def isRun(self):
-        return configs.communicate.get(self.id, 'run') != 'false'
+        return configs.communicate.get(self.appName, self.id, 'run') != 'false'
 
     def log(self, *args, **kwgs):
         buf = "".join(args)
-        log.write(self.id, buf)
+        log.write(self.appName, self.id, buf)
