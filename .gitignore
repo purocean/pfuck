@@ -7,6 +7,4 @@ build
 dist
 *.log
 
-link.txt
-
 data/**/*.json

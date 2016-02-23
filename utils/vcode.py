@@ -1,4 +1,6 @@
 # coding: utf-8
+#cython: language_level=3, boundscheck=False
+
 import os
 import re
 import csv

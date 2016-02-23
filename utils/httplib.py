@@ -1,4 +1,6 @@
 #coding: utf-8
+#cython: language_level=3, boundscheck=False
+
 """
 Httplib
 一个 HTTP 通讯库

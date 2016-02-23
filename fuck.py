@@ -17,5 +17,5 @@ port = '8099'
 
 webbrowser.open("http://127.0.0.1:" + port)
 
-# bottle.debug(True)
+bottle.debug(True)
 bottle.run(port=port, server='gevent')

@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+from utils import storage
 
 APP_NAME = 'liuliangeasy8'
 APP_TITLE = '易赚流量'
