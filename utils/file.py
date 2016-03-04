@@ -1,8 +1,9 @@
 # coding: utf-8
 # cython: language_level=3, boundscheck=False
 
-import glob
 import os
+import glob
+import hashlib
 
 def files(currDir='.', ext='*.*'):
     """当前目录下的文件"""
@@ -30,3 +31,10 @@ def remove(files, show = False):
 
 def rename(name, newName, rootDir='.'):
     os.rename(os.path.join(rootDir, name), os.path.join(rootDir, newName))
+
+def md5(file):
+    hashMd5 = hashlib.md5()
+    with open(file, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hashMd5.update(chunk)
+    return hashMd5.hexdigest()

@@ -1,6 +1,11 @@
 import os
 import sys
 import glob
+import time
+import json
+import shutil
+import zipfile
+import hashlib
 
 import distutils.core
 from Cython.Build import cythonize
@@ -12,12 +17,32 @@ def files(currDir='.', ext='*.*'):
     for file in glob.glob(os.path.join(currDir, ext)):
         yield file
 
+def allFiles(rootDir, ext):
+    """当前目录下以及子目录的文件"""
+    for name in os.listdir(rootDir):
+        if os.path.isdir(os.path.join(rootDir, name)):
+            try:
+                for file in allFiles(os.path.join(rootDir, name), ext):
+                    yield file
+            except:
+                pass
+    for file in files(rootDir, ext):
+        yield file
+
 def remove(files, show = False):
     """删除 rootDir 目录下的符合的文件"""
     for file in files:
         if show:
             print('remove: ', file)
         os.remove(file)
+
+def md5(file):
+    hashMd5 = hashlib.md5()
+    with open(file, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hashMd5.update(chunk)
+    return hashMd5.hexdigest()
+
 
 NAME = 'fuck'
 VERSION = '0.07'
@@ -113,3 +138,46 @@ setup(
 for package in packages:
     remove(files(package.replace('.', '/'), '*.c'), True)
     remove(files(package.replace('.', '/'), '*.pyd'), True)
+    remove(files('build/exe.win-amd64-3.4/' + package.replace('.', '/') + '/log', '*.log'), True)
+    remove(files('build/exe.win-amd64-3.4/' + package.replace('.', '/') + '/log', '*.png'), True)
+    remove(files('build/exe.win-amd64-3.4/' + package.replace('.', '/') + '/data', '*.json'), True)
+
+# zip 压缩
+os.chdir('build/exe.win-amd64-3.4')
+
+checkSumJsonFile = 'checkSum.json'
+checkSum = {}
+lastCheckSum = {}
+try:
+    with open(checkSumJsonFile, 'r') as f:
+        lastCheckSum = json.load(f)
+except:
+    pass
+
+dateTime = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
+fullZipFile = '../'+ NAME +'_v'+ VERSION +'_full_'+ dateTime +'.zip'
+updateZipFile = '../'+ NAME +'_v'+ VERSION +'_update_'+ dateTime +'.zip'
+
+with zipfile.ZipFile(fullZipFile, 'w', zipfile.ZIP_DEFLATED) as fFull:
+    with zipfile.ZipFile(updateZipFile, 'w', zipfile.ZIP_DEFLATED) as fUpdate:
+        for file in allFiles('.', '*.*'):
+            if checkSumJsonFile in file:
+                continue
+
+            md = hashlib.md5()
+            md.update(file.encode())
+            fileKey = md.hexdigest()
+            checkSum[fileKey] = md5(file)
+
+            print('zip full   ' + checkSum[fileKey] + ' ' + file)
+            fFull.write(file)
+            if fileKey not in lastCheckSum or lastCheckSum[fileKey] != checkSum[fileKey]:
+                print('zip update ' + checkSum[fileKey] + ' ' + file)
+                fUpdate.write(file)
+        fFull.write(checkSumJsonFile)
+        fUpdate.write(checkSumJsonFile)
+
+with open(checkSumJsonFile, 'w') as f:
+    json.dump(checkSum, f)
+
+print('done')
