@@ -456,6 +456,19 @@ Ycom = {
             this.wrapper.off(type, target).on(type, target, fun);
         },
     },
+
+    divideArray: function(inArr, start, end, count) {
+        if (count <= 0) {
+            return [];
+        }
+
+        var firstSize = parseInt((end - start - 1) / count) + 1;
+
+        var first = inArr.slice(start, start + firstSize);
+        var other = this.divideArray(inArr, start + firstSize, end, count - 1);
+
+        return [first].concat(other);
+    }
 };
 
 (function($){

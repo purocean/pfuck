@@ -2,20 +2,21 @@
 
 import gevent
 from gevent import monkey
+monkey.patch_all()
 
 import bottle
 import webbrowser
 
-import routers.static
-import routers.home
+import application.api.router
+import application.common.router
+import application.qianbao.router
 
-import routers.liuliangeasy8
-
-monkey.patch_all()
+debug = False
 
 port = '8099'
 
-webbrowser.open("http://127.0.0.1:" + port)
+if not debug:
+    webbrowser.open("http://127.0.0.1:" + port)
 
-bottle.debug(True)
+bottle.debug(debug)
 bottle.run(port=port, server='gevent')

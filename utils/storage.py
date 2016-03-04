@@ -1,27 +1,20 @@
 # coding: utf-8
-#cython: language_level=3, boundscheck=False
+# cython: language_level=3, boundscheck=False
 
 import os
 import json
 
-import configs.common
-
-dataPath = os.getcwd() + '/data/'
-
-def read(fileName):
-    file = dataPath + fileName
+def read(file):
     data = {};
 
     if os.path.isfile(file):
         with open(file, 'r') as f:
             data = json.load(f)
     else:
-        write(fileName, data)
+        write(file, data)
 
     return data
 
-def write(fileName, data):
-    file = dataPath + fileName
-
+def write(file, data):
     with open(file, 'w') as f:
         json.dump(data, f)

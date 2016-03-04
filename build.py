@@ -20,40 +20,48 @@ def remove(files, show = False):
         os.remove(file)
 
 NAME = 'fuck'
-VERSION = '0.03'
+VERSION = '0.07'
 AUTHOR = '洋子'
 DESCRIPTION = 'yangzi'
 GUID = 'bce00d2e-2120-46ba-85eb-0d8b42505ecb'
 
 includeFiles = [(file, file) for file in [
+    'favicon.ico',
+    'bin/pjs.exe',
+    'bin/preload.js',
+    'cache/.keep',
+
     'static/css/foundation.min.css',
     'static/css/style.css',
     'static/js/jquery-1.12.0.min.js',
     'static/js/foundation.min.js',
     'static/js/ycom.js',
 
-    'data/common/.keep',
-    'data/liuliangeasy8/.keep',
+    'application/common/data/.keep',
+    'application/common/log/.keep',
+    'application/common/tpl/index.html',
 
-    'log/liuliangeasy8/.keep',
+    'application/api/data/.keep',
+    'application/api/log/.keep',
+    'application/api/tpl/index.html',
 
-    'tpl/home/index.html',
-    'tpl/liuliangeasy8/index.html',
-    'tpl/liuliangeasy8/getRedBag.html',
+    'application/qianbao/data/.keep',
+    'application/qianbao/log/.keep',
+    'application/qianbao/tpl/index.html',
 ]]
 
 includeFiles.append(('build_extra_files/msvcr100.dll', 'msvcr100.dll'))
-includeFiles.append(('favicon.ico', 'favicon.ico'))
 
 packages = [
-    'app.liuliangeasy8',
+    'application.common',
+    'application.api',
+    'application.qianbao',
 
-    'app',
-    'configs',
-    'core',
-    'routers',
     'utils',
     'vendors',
+
+    'requests',
+    'selenium',
 ]
 
 # 编译文件

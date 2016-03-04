@@ -44,8 +44,19 @@
         }
 
         .log-info {
+            height: 4.5em;
+
             .log-title {
-                line-height: 3em;
+                margin: 0 35px;
+                display: inline-block;
+                line-height: 1.2em;
+                max-height: 3em;
+                overflow: auto;
+                background: #fff;
+                margin-right: 0;
+                position: absolute;
+                left: 50px;
+                right: 82px;
             }
 
             .log-operate {
@@ -72,16 +83,28 @@
 
         .input-form {
             clear: both;
+            text-align: right;
 
             input {
-                width: 85%;
+                width: 72%;
                 display: inline-block;
-            }
-
-            button {
-                width: 14%;
-                margin: 0;
+                position: absolute;
+                right: 82px;
             }
         }
     }
+
+    #log-wrapper_error, #log-wrapper_retry, #log-wrapper_success {
+        .log-title {
+            height: 40px;
+            font-weight: bold;
+            color: red;
+        }
+
+        .log {
+            margin-top: 10px;
+            height: 300px;
+        }
+    }
 }
+

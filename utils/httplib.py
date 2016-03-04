@@ -1,5 +1,5 @@
-#coding: utf-8
-#cython: language_level=3, boundscheck=False
+# coding: utf-8
+# cython: language_level=3, boundscheck=False
 
 """
 Httplib
@@ -51,7 +51,7 @@ class Httplib:
             result = webPage.decode(charset, 'ignore')
         return result
 
-    def __send(self, request, headers, charset):
+    def __send(self, request, headers, charset, binary=False):
         '''发送一个请求'''
         for k, v in headers.items():
             request.add_header(k, v)
@@ -61,18 +61,21 @@ class Httplib:
         except urllib.error.HTTPError as e:
             self.__error(e)
         else:
-            return self.__decode(self.response.read(), charset)
+            if not binary:
+                return self.__decode(self.response.read(), charset)
+            else:
+                return self.response.read()
 
-    def get(self, url, params={}, headers={}, charset='UTF-8'):
+    def get(self, url, params={}, headers={}, charset='UTF-8', binary=False):
         '''HTTP GET 方法'''
         if params:
             url += '?' + urllib.parse.urlencode(params)
         request = urllib.request.Request(url)
-        return self.__send(request, headers, charset)
+        return self.__send(request, headers, charset, binary)
 
-    def post(self, url, params={}, headers={}, charset='UTF-8'):
+    def post(self, url, params={}, headers={}, charset='UTF-8', binary=False):
         '''HTTP POST 方法'''
         if type(params) != type(''):
             params = urllib.parse.urlencode(params)
         request = urllib.request.Request(url, data=params.encode(charset))
-        return self.__send(request, headers, charset)
+        return self.__send(request, headers, charset, binary)

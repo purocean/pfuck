@@ -1,0 +1,295 @@
+// 钱宝改密
+// 720x1280
+
+Log.Open
+
+Rem BEGIN
+
+Dim appDesc = "钱宝改密"
+Dim appName = "com.qianwang.qianbao"
+Dim helpAppName = "info.yangzi.fuckuploadfile"
+Dim dataPath = "/sdcard/"
+Dim apiUrl = "http://10.0.3.2:8099/api/"
+Dim imei = GetDeviceID()
+Dim taskList = getTaskList()
+Dim taskStr = ""
+
+For i=0 to UBound(taskList)
+    Dim taskData
+    If init() Then
+        taskData = taskList(i)
+        taskStr = taskData["dataStr"]
+        recordLog "-----------------------"
+        recordLog taskStr
+
+        main taskData
+    Else
+        recordError "启动应用失败"
+    End If
+Next
+
+if UBound(taskList) >-1 Then
+    recordLog "清空任务队列"
+    Url.Get(apiUrl & "?action=clearTasks&imei=" & imei)
+End If
+
+Goto BEGIN
+
+//////////////////////////////////////////////////////////////////
+
+Function main(taskData)
+    main = False
+
+    // 欢迎界面
+    step1
+
+    // 输入手机号
+    InputText taskData["phoneNum"]
+    Tap 627,174
+    Dim i = 1
+    For i = 1 to 3
+        Delay 1000
+        Dim vcode = getVcode(452,607,568,665)
+        Tap 414,640
+        InputText vcode
+        Delay 1000
+        Tap 556,770
+        Delay 1500
+        If CmpColor(425, 694, "2030FF", 0.7) > -1 Then
+            recordError "今日获取验证码次数达到上限"
+            Exit Function
+        ElseIf CmpColor(261, 698, "2030FF", 0.7) > -1 Then
+            recordError "此手机号不存在"
+            Exit Function
+        ElseIf CmpColor(112, 691, "3140FF", 0.7) > -1 Then
+            reportVcodeError
+        Else
+            Exit For
+        End If
+    Next
+
+    If i >= 3
+        recordRetry "重试验证码次数过多，放弃任务"
+        Exit Function
+    End If
+
+    recordLog "等待短信验证码"
+    Tap 149, 295
+    Dim smsVcode = getSmsVcode(taskData["phoneNum"])
+    if smsVcode = "" Then
+        recordRetry "获取短信验证码超时"
+        Exit Function
+    End If
+
+    InputText smsVcode
+    Delay 100
+    Tap 403, 457
+
+    Delay 500
+
+    If waitColorEq(412, 620, "FFFFFF", 0.9, 30, "等待加载……") Then
+        If CmpColor(167,1182, "696969", 0.8) > -1 Then
+            recordRetry "短信验证码错误"
+            Exit Function
+        End If
+
+        Delay 200
+        InputText taskData["password"]
+        Delay 100
+        Tap 221,347
+        Delay 200
+        If waitColorEq(412, 620, "FFFFFF", 0.9, 30, "等待加载……") Then
+            If CmpColor(166, 557, "2030FF", 0.8) > -1 Then
+                main = True
+                recordSuccess "修改成功"
+                Exit Function
+            Else
+                recordRetry "修改失败"
+                Exit Function
+            End If
+            SnapShot dataPath & "result.png"
+        Else
+            recordRetry "等待加载超时，放弃"
+            Exit Function
+        End If
+    Else
+        recordRetry "等待加载超时，放弃"
+        Exit Function
+    End If
+End Function
+
+Function step1()
+    // 前置脚本
+    TouchDownEvent 1440,513,0
+    TouchMoveEvent 1436,513,0,45
+    TouchMoveEvent 1432,513,0,11
+    TouchMoveEvent 1404,514,0,16
+    TouchMoveEvent 1361,516,0,28
+    TouchMoveEvent 1301,517,0,14
+    TouchMoveEvent 1223,517,0,15
+    TouchMoveEvent 1095,520,0,20
+    TouchMoveEvent 977,523,0,9
+    TouchMoveEvent 800,529,0,17
+    TouchMoveEvent 654,531,0,14
+    TouchMoveEvent 508,533,0,14
+    TouchMoveEvent 362,533,0,14
+    TouchMoveEvent 216,533,0,14
+    TouchMoveEvent 21,527,0,15
+    TouchMoveEvent -88,524,0,15
+    TouchMoveEvent -177,520,0,14
+    TouchMoveEvent -216,519,0,14
+    TouchMoveEvent -259,517,0,15
+    TouchMoveEvent -295,516,0,17
+    TouchMoveEvent -327,513,0,12
+    TouchMoveEvent -334,513,0,14
+    TouchMoveEvent -355,510,0,15
+    TouchMoveEvent -376,509,0,15
+    TouchMoveEvent -401,507,0,15
+    TouchMoveEvent -419,507,0,13
+    TouchMoveEvent -440,506,0,14
+    TouchMoveEvent -458,506,0,15
+    TouchMoveEvent -480,506,0,14
+    TouchMoveEvent -501,505,0,15
+    Delay 200
+    TouchUpEvent 0
+    Delay 200
+    TouchDownEvent 846,817,0
+    Delay 50
+    TouchUpEvent 0
+    Delay 200
+    Tap 673,299
+    delay 200
+
+    step1 = True
+End Function
+
+Function init()
+    Sys.ClearAppCache appName
+    KillApp helpAppName
+    Delay 2000
+
+    RunApp helpAppName
+    Delay 1000
+    RunApp appName
+    recordLog "启动应用"
+    Delay 3500
+
+    init = Sys.AppIsFront(appName)
+End Function
+
+Function getVcode(x, y, w, h)
+    recordLog "开始打码"
+    SnapShot dataPath & "vcode.png", x, y, w, h
+    Delay 3200
+
+    Dim result = ""
+    Dim i = 1
+    For i = 1 To 5
+        recordLog "获取验证码 " & i
+        result = Url.Get(apiUrl & "?action=getVcode&imei=" & imei)
+
+        If result <> "" Then
+            recordLog "打码结果：" & result
+            Exit For
+        End If
+        Delay 1000
+    Next
+
+    getVcode = result
+End Function
+
+Function reportVcodeError()
+    recordLog "验证码不正确, 反馈中……"
+    Dim result = ""
+    result = Url.Get(apiUrl & "?action=reportVcodeError&imei=" & imei)
+    recordLog result
+    reportVcodeError = result
+End Function
+
+Function recordError(text)
+    ShowMessage text
+    TracePrint text
+    Dim result = ""
+    result = Url.Get(apiUrl & "?action=recordError&dataStr="& urlEncode(taskStr) &"&data="& urlEncode(text) &"&imei=" & imei)
+    recordError = result
+End Function
+
+Function recordSuccess(text)
+    ShowMessage text
+    TracePrint text
+    Dim result = ""
+    result = Url.Get(apiUrl & "?action=recordSuccess&dataStr="& urlEncode(taskStr) &"&data="& urlEncode(text) &"&imei=" & imei)
+    recordSuccess = result
+End Function
+
+Function recordRetry(text)
+    ShowMessage text
+    TracePrint text
+    Dim result = ""
+    result = Url.Get(apiUrl & "?action=recordRetry&dataStr="& urlEncode(taskStr) &"&data="& urlEncode(text) &"&imei=" & imei)
+    recordRetry = result
+End Function
+
+Function recordLog(text)
+    ShowMessage text
+    TracePrint text
+    Dim result = ""
+    result = Url.Get(apiUrl & "?action=log&data="& urlEncode(text) &"&imei=" & imei)
+    recordLog = result
+End Function
+
+Function getTaskList()
+    Dim result = ""
+    result = Url.Get(apiUrl & "?action=getTaskDataJson&imei=" & imei)
+    taskList = Encode.JsonToTable(result)
+    recordLog appDesc & "--等待任务中"
+    Delay 1000
+    getTaskList = taskList
+End Function
+
+Function waitColorEq(x, y, color, simil, tim, tip)
+    waitColorEq = False
+    Dim i = 1
+    For i = 1 to tim
+        recordLog tip & i
+        If CmpColor(x, y, color, simil) > -1 Then
+            waitColorEq = True
+            Exit For
+        End If
+        Delay 1000
+    Next
+End Function
+
+Function getSmsVcode(phoneNum)
+    Dim result = ""
+    Dim i = 1
+    For i = 1 To 60
+        recordLog "收取短信验证码 " & i
+        result = Url.Get(apiUrl & "?action=getSmsVcode&data="& phoneNum &"&imei=" & imei)
+
+        If result <> "" Then
+            Exit For
+        End If
+        Delay 1000
+    Next
+
+    getSmsVcode = result
+End Function
+
+Function urlEncode(text)
+    Dim result = ""
+    Dim x = ""
+    Dim y = ""
+    For i = 1 to Len(text)
+        x = Mid(text, i, 1)
+        y = Hex(Asc(x))
+        if Len(y) = 1 Then
+            y = "0" & y
+        End If
+        result = result & "%" & y
+    Next
+    TracePrint result
+    urlEncode = result
+End Function
+
+Log.Close
