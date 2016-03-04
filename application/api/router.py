@@ -3,20 +3,22 @@
 
 from .__init__ import *
 
-import html, base64
+import html
+import base64
 from bottle import route, template, request
 
-from . import config, communicate, main, func, logger
-import application.common.config
+from . import main
+import application.common.main
 
 @route('/' + APP_NAME + '/index', method='GET')
 def index():
+    commonApp = application.common.main.Main()
     configs = {
-        'smsFile': (application.common.config.get('smsFile', '')),
-        'ruokuaiUser': html.escape(application.common.config.get('ruokuaiUser', '')),
-        'ruokuaiPassword': html.escape(application.common.config.get('ruokuaiPassword', '')),
-        'threadNum': html.escape(application.common.config.get('threadNum', '3')),
-        'simulators': html.escape(config.get('simulators', '')),
+        'smsFile': (commonApp.getConfig('smsFile', '')),
+        'ruokuaiUser': html.escape(commonApp.getConfig('ruokuaiUser', '')),
+        'ruokuaiPassword': html.escape(commonApp.getConfig('ruokuaiPassword', '')),
+        'threadNum': html.escape(commonApp.getConfig('threadNum', '3')),
+        'simulators': html.escape(main.Main().getConfig('simulators', '')),
     }
 
     return template(TPL_DIR + 'index.html', htmlTitle=APP_TITLE, appName=APP_NAME, configs=configs)
@@ -25,17 +27,18 @@ def index():
 def start():
     args = request.POST.decode('utf-8')
     workId = args['id']
+    app = main.Main(workId)
 
     if args['data'] == '__start__':
-        logger.write(workId, '------------------------------------------------------------')
+        app.recordLog('------------------------------------------------------------')
         return workId
 
-    if ':' + workId not in config.get('simulators', ''):
-        logger.write("error", '虚拟机(#'+ workId +')不存在，请配置')
+    if ':' + workId not in app.getConfig('simulators', ''):
+        app.recordError('虚拟机(#'+ workId +')不存在，请配置')
         return workId
 
     data = args['data'].split('\n')
-    main.Main(workId).setTaskData(data)
+    app.setTasks(data)
 
     return workId
 
@@ -45,7 +48,9 @@ def cmunte():
     key = request.POST.get('key', '').strip()
     value = request.POST.get('value', '').strip()
 
-    communicate.set(workId, key, value)
+    app = main.Main(workId)
+
+    app.setCommunicate(key, value)
 
     return {
         'status': 'ok',
@@ -57,7 +62,7 @@ def api():
     args = request.GET.decode('utf-8')
     action = request.GET.get('action', '').strip()
     imei = request.GET.get('imei', '').strip()
-    workId = func.getWorkIdByImei(imei)
+    workId = main.Main().getWorkIdByImei(imei)
 
     data = ''
     if 'data' in args:
@@ -78,7 +83,7 @@ def api():
     elif action == 'getTaskDataJson':
         return app.getTaskDataJson()
     elif action == 'log':
-        return app.log(data)
+        return app.recordLog(data)
     elif action == 'recordError':
         return app.recordError(data, dataStr)
     elif action == 'recordRetry':
@@ -94,16 +99,17 @@ def api():
 def uploadVcode():
     data = request.POST.get('data', '').strip().replace(' ', '+').replace('\n', '')
     imei = request.POST.get('imei', '').strip()
-    workId = func.getWorkIdByImei(imei)
+    workId = main.Main().getWorkIdByImei(imei)
+    app = main.Main(workId)
 
-    communicate.set(workId, 'vcodeImg', data)
+    app.setCommunicate('vcodeImg', data)
     return 'ok'
 
 @route('/' + APP_NAME + '/saveConfig', method='POST')
 def saveConfig():
     args = request.POST.decode('utf-8')
     for key, value in args.items():
-        config.set(key, value)
+        main.Main().setConfig(key, value)
 
     return {
         'status': 'ok',

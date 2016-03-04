@@ -1,135 +1,125 @@
 # coding: utf-8
 # cython: language_level=3, boundscheck=False
 
-from .__init__ import *
-
 import re
 import time
-from hashlib import md5
+import json
 
-import utils.httplib
-import vendors.smsvcode
+from .__init__ import *
 
-from . import func, communicate, logger
+import vendors.vcode
 
-from selenium import webdriver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-import selenium.webdriver.support.ui as ui
-
-class Main():
-    def __init__(self, workId, tasks):
+class Main(object):
+    def __init__(self, workId='page'):
         self.workId = workId
-        self.tasks = tasks
-        self.task = {}
-        self.taskName = 'task'
-        self.taskDetail = 'taskDetail'
 
-        self.log('------------------------------------------------------------')
+        self.logDir = LOG_DIR
+        self.dataDir = DATA_DIR
 
-    def __del__( self ):
+    def __del__(self):
         pass
 
-    def init(self):
-        logger.write('error', '[' + self.workId +'] <'+ self.taskName +'> ********任务开始********')
-        self.log('********任务开始********')
+    def setTasks(self, tasks):
+        self.setCommunicate('tasks', json.dumps(tasks))
 
-        communicate.set(self.workId, 'run', 'true')
-        communicate.set(self.workId, 'smsvcode', None)
+    def clearTasks(self):
+        self.setCommunicate('tasks', '[]')
 
-    def run(self):
-        for x in self.tasks:
+    def getVcode(self, img):
+        user = Main().getConfig('ruokuaiUser')
+        password = Main().getConfig('ruokuaiPassword')
 
-            try:
-                self.task =  self.parseTask()
-            except Exception as e:
-                self.logError('请检查数据格式是否正确')
+        if user == None or password == None:
+            self.recordError('请配置若快账号！')
+            return False
+        else:
+            vcode = vendors.vcode.get(user, password, img)
+            if vcode == False:
+                self.recordLog('打码平台出错！')
 
-            self.init()
-
-            # self.main()
-            try:
-                self.main()
-                self.log('任务结束：' + str(self.data))
-            except Exception as e:
-                self.recordRetry('意外错误：' + str(e))
-
-    def main(self):
-        pass
-
-    def getVcodeBySrc(self, vcodeSrc):
-        self.log('****打码****')
-        http = utils.httplib.Httplib()
-        img = http.get(vcodeSrc, binary=True)
-        data = {'workId': self.workId, 'img': img}
-        return func.wait(self.workId, 4, lambda data: func.getVcode(data['workId'], data['img']), data)
+            return vcode
 
     def getSmsVcode(self, phoneNum):
-        self.log('****读取短信验证码****')
-        smsVcode = func.wait(self.workId, 60, lambda data: func.getSmsVcode(self.workId, phoneNum))
-        if not smsVcode:
-            self.recordRetry('收取短信验证码超时')
-        else:
-            self.log(smsVcode)
+        vcodeFromCommunicate = self.getCommunicate('smsvcode')
 
-        return smsVcode
+        if vcodeFromCommunicate:
+            self.setCommunicate('smsvcode', False)
+            return vcodeFromCommunicate
+        else:
+            smsFile = Main().getConfig('smsFile', 'sms.txt')
+            lastVcode = self.getCommunicate('lastsmsvcode')
+            vcode = vendors.smsvcode.get(smsFile, phoneNum, lastVcode)
+            if vcode == False:
+                self.recordLog('短信文件：'+smsFile+'不存在！')
+                return False
+            else:
+                if vcode:
+                    self.setCommunicate('lastsmsvcode', vcode)
+                    return vcode
+
+        return False
 
     def reportVcodeError(self, imgId):
-        self.log('反馈打码错误')
-        func.reportVcodeError(self.workId, imgId)
+        user = Main().getConfig('ruokuaiUser')
+        password = Main().getConfig('ruokuaiPassword')
 
-    def log(self, text):
-        logger.write(self.workId, text)
-
-    def screenshot(self, name):
-        self.driver.save_screenshot(LOG_DIR + self.workId + '_' + name + '.png')
-
-    def waitElement(self, selector):
-        self.wait(lambda data: self.find(selector) != None)
-        return self.find(selector)
-
-    def wait(self, doing, data=None):
-        return func.wait(self.workId, 10, doing, data)
-
-    def execJs(self, script):
-        self.driver.execute_script(script)
-
-    def sleep(self, second=0.6):
-        time.sleep(second)
-        # self.screenshot(time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
-
-    def find(self, selector):
-        try:
-            elements = self.driver.find_elements_by_css_selector(selector)
-            if len(elements) > 0:
-                return elements
-            else:
-                return None
-        except:
-            return None
-
-    def logError(self, text):
-        self.log(text)
-        logger.write('error', '\n')
-        logger.write('error', '[' + self.workId +'] ' + ' <' + text + '>\n' + self.dataStr)
-        self.screenshot(time.strftime('error_%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
-
-    def recordRetry(self, text):
-        logger.write('retry', self.dataStr, prefix='')
-        self.logError('**请重试此条**' + text)
-
-    def recordSuccess(self, text):
-        self.log(text)
-        logger.write('success', self.dataStr)
-
-    def checkJs(self, condition):
-        elementId = '__yang__' + md5(condition.encode()).hexdigest()
-
-        if self.find('#' + elementId):
-            return True
+        if user == None or password == None:
+            logger.write(workId, '请配置若快账号！')
+            return False
         else:
-            self.execJs("if("+ condition +") {var __yang__node = document.createElement('div');__yang__node.id='"+ elementId +"';document.body.appendChild(__yang__node);}")
-            self.sleep(0.3)
-            if self.find('#' + elementId):
-                return True
-            else:
-                return False
+            vendors.vcode.report(user, password, imgId)
+
+    def isRun(self):
+        return self.getCommunicate('run') != 'false'
+
+    def wait(self, second, doing, data=None):
+        for x in range(second):
+            if not self.isRun():
+                break
+
+            self.recordLog('*')
+
+            result = doing(data)
+            if result != False:
+                return result
+                break
+
+            time.sleep(1)
+        return False
+
+    def recordLog(self, text, workId=None, prefix=None):
+        if workId == None:
+            workId = self.workId
+
+        return utils.logger.write(self.logDir, workId, text, prefix)
+
+    def recordError(self, text, taskStr=''):
+        self.recordLog(text)
+        self.recordLog('\n', 'error', prefix='')
+        self.recordLog('[' + self.workId +'] ' + ' <' + text + '>\n' + taskStr, 'error')
+
+    def recordRetry(self, text, taskStr=''):
+        self.recordLog(taskStr, 'retry', prefix='')
+        self.recordError('<请重试此条>' + text, taskStr)
+
+    def recordSuccess(self, text, taskStr=''):
+        self.recordLog(text)
+        self.recordLog(taskStr, 'success')
+
+    def getConfig(self, key, default=None):
+        return utils.config.get(self.dataDir, key, default)
+
+    def setConfig(self, key, value):
+        return utils.config.set(self.dataDir, key, value)
+
+    def getCommunicate(self, key, default=None):
+        return utils.communicate.get(self.dataDir, self.workId, key, default)
+
+    def setCommunicate(self, key, value):
+        return utils.communicate.set(self.dataDir, self.workId, key, value)
+
+    def readRecentLog(self, offset, workId=None):
+        if workId == None:
+            workId = self.workId
+
+        return utils.logger.readRecent(self.logDir, workId, offset)

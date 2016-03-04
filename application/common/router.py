@@ -2,7 +2,8 @@
 # cython: language_level=3, boundscheck=False
 
 from .__init__ import *
-from . import config
+
+from . import main
 
 from bottle import route, template, static_file, request
 
@@ -15,21 +16,22 @@ def log():
     appName = request.GET.get('app', '').strip()
     queryStr = request.GET.get('query', '').strip()
 
-    app = __import__('application.' + appName, globals(), locals(), ['logger'], 0)
+    app = __import__('application.' + appName, globals(), locals(), ['main'], 0)
 
     query = json.loads(queryStr)
 
     result = {}
     for workId, offset in query.items():
-        result[workId] = app.logger.readRecent(workId, offset)
+        result[workId] = app.main.Main(workId).readRecentLog(offset)
 
     return result
 
 @route('/saveConfig', method='POST')
 def saveConfig():
     args = request.POST.decode('utf-8')
+    app = main.Main()
     for key, value in args.items():
-        config.set(key, value)
+        app.setConfig(key, value)
 
     return {
         'status': 'ok',

@@ -14,10 +14,10 @@ Dim imei = GetDeviceID()
 Dim taskList = getTaskList()
 Dim taskStr = ""
 
-For i=0 to UBound(taskList)
+For i = 0 to UBound(taskList)
     Dim taskData
     If init() Then
-        taskData = taskList(i)
+        taskData = parseData(taskList(i))
         taskStr = taskData["dataStr"]
         recordLog "-----------------------"
         recordLog taskStr
@@ -33,6 +33,7 @@ if UBound(taskList) >-1 Then
     Url.Get(apiUrl & "?action=clearTasks&imei=" & imei)
 End If
 
+Delay 1500
 Goto BEGIN
 
 //////////////////////////////////////////////////////////////////
@@ -41,11 +42,14 @@ Function main(taskData)
     main = False
 
     // 欢迎界面
-    step1
-
+    welcom
     // 输入手机号
+    Tap 632,293
+    Delay 500
     InputText taskData["phoneNum"]
-    Tap 627,174
+
+    Delay 300
+    Tap 625,174
     Dim i = 1
     For i = 1 to 3
         Delay 1000
@@ -74,13 +78,13 @@ Function main(taskData)
     End If
 
     recordLog "等待短信验证码"
-    Tap 149, 295
     Dim smsVcode = getSmsVcode(taskData["phoneNum"])
     if smsVcode = "" Then
         recordRetry "获取短信验证码超时"
         Exit Function
     End If
-
+    Tap 149, 295
+    Delay 100
     InputText smsVcode
     Delay 100
     Tap 403, 457
@@ -118,49 +122,48 @@ Function main(taskData)
     End If
 End Function
 
-Function step1()
+Function welcom()
+    If CmpColor(587,83, "4F300B", 0.9) >-1 Then
+        recordLog "跳过欢迎界面"
+        Delay 500
+        Exit Function
+    End If
     // 前置脚本
-    TouchDownEvent 1440,513,0
-    TouchMoveEvent 1436,513,0,45
-    TouchMoveEvent 1432,513,0,11
-    TouchMoveEvent 1404,514,0,16
-    TouchMoveEvent 1361,516,0,28
-    TouchMoveEvent 1301,517,0,14
-    TouchMoveEvent 1223,517,0,15
-    TouchMoveEvent 1095,520,0,20
-    TouchMoveEvent 977,523,0,9
-    TouchMoveEvent 800,529,0,17
-    TouchMoveEvent 654,531,0,14
-    TouchMoveEvent 508,533,0,14
-    TouchMoveEvent 362,533,0,14
-    TouchMoveEvent 216,533,0,14
-    TouchMoveEvent 21,527,0,15
-    TouchMoveEvent -88,524,0,15
-    TouchMoveEvent -177,520,0,14
-    TouchMoveEvent -216,519,0,14
-    TouchMoveEvent -259,517,0,15
-    TouchMoveEvent -295,516,0,17
-    TouchMoveEvent -327,513,0,12
-    TouchMoveEvent -334,513,0,14
-    TouchMoveEvent -355,510,0,15
-    TouchMoveEvent -376,509,0,15
-    TouchMoveEvent -401,507,0,15
-    TouchMoveEvent -419,507,0,13
-    TouchMoveEvent -440,506,0,14
-    TouchMoveEvent -458,506,0,15
-    TouchMoveEvent -480,506,0,14
-    TouchMoveEvent -501,505,0,15
-    Delay 200
-    TouchUpEvent 0
-    Delay 200
-    TouchDownEvent 846,817,0
-    Delay 50
-    TouchUpEvent 0
-    Delay 200
-    Tap 673,299
-    delay 200
-
-    step1 = True
+    For i = 1 to 1
+        TouchDownEvent 1386,544,0
+        TouchMoveEvent 1383,544,0,142
+        TouchMoveEvent 1368,544,0,17
+        TouchMoveEvent 1351,544,0,28
+        TouchMoveEvent 1336,544,0,14
+        TouchMoveEvent 1315,544,0,14
+        TouchMoveEvent 1294,544,0,15
+        TouchMoveEvent 1251,547,0,16
+        TouchMoveEvent 1212,549,0,13
+        TouchMoveEvent 1144,553,0,15
+        TouchMoveEvent 1080,554,0,14
+        TouchMoveEvent 1009,556,0,14
+        TouchMoveEvent 917,561,0,14
+        TouchMoveEvent 824,564,0,15
+        TouchMoveEvent 686,571,0,16
+        TouchMoveEvent 586,574,0,14
+        TouchMoveEvent 444,582,0,14
+        TouchMoveEvent 362,586,0,18
+        TouchMoveEvent 238,594,0,12
+        TouchMoveEvent 160,595,0,14
+        TouchMoveEvent 0,604,0,15
+        TouchMoveEvent -128,607,0,14
+        TouchMoveEvent -288,612,0,15
+        TouchMoveEvent -359,613,0,15
+        TouchMoveEvent -405,613,0,14
+        TouchMoveEvent -419,613,0,14
+        TouchMoveEvent -433,613,0,14
+        Delay 50
+        TouchUpEvent 0
+        Delay 200
+    Next
+    Tap 378, 1155
+    Delay 600
+    welcom = True
 End Function
 
 Function init()
@@ -187,6 +190,7 @@ Function getVcode(x, y, w, h)
     For i = 1 To 5
         recordLog "获取验证码 " & i
         result = Url.Get(apiUrl & "?action=getVcode&imei=" & imei)
+        TracePrint result
 
         If result <> "" Then
             recordLog "打码结果：" & result
@@ -241,10 +245,21 @@ End Function
 Function getTaskList()
     Dim result = ""
     result = Url.Get(apiUrl & "?action=getTaskDataJson&imei=" & imei)
+    TracePrint result
     taskList = Encode.JsonToTable(result)
     recordLog appDesc & "--等待任务中"
-    Delay 1000
     getTaskList = taskList
+End Function
+
+Function parseData(dataStr)
+    Dim pool = Array()
+    pool = Split(dataStr, ",")
+    If UBound(pool) < 1 Then
+        recordError "数据格式不正确"
+        parseData = {"dataStr": dataStr}
+    Else
+        parseData = {"phoneNum": pool(0), "password": pool(1), "dataStr": dataStr}
+    End If
 End Function
 
 Function waitColorEq(x, y, color, simil, tim, tip)
@@ -288,7 +303,6 @@ Function urlEncode(text)
         End If
         result = result & "%" & y
     Next
-    TracePrint result
     urlEncode = result
 End Function
 

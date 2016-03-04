@@ -9,9 +9,10 @@ import webbrowser
 
 import application.api.router
 import application.common.router
-import application.qianbao.router
+# import application.qianbao.router
 
-debug = False
+# debug = False
+debug = True
 
 port = '8099'
 
