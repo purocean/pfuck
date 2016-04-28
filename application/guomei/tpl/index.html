@@ -1,0 +1,378 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="renderer" content="webkit" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="initial-scale=1.0,user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <title>{{htmlTitle}}}</title>
+    <link rel="stylesheet" href="/static/css/foundation.min.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="/static/css/style.css" type="text/css" media="screen" />
+    <script src="/static/js/jquery-1.12.0.min.js"></script>
+    <script src="/static/js/foundation.min.js"></script>
+    <script src="/static/js/ycom.js"></script>
+</head>
+<body class="{{appName}}">
+<script>
+    appName = '{{appName}}';
+    threadNum = {{configs['threadNum']}};
+
+    function setThreadNum(num) {
+        threadNum = num
+    }
+</script>
+<div class="main">
+    <div class="box config">
+        <h3>{{htmlTitle}}</h3>
+        <div class="row">
+            <div class="small-12 large-12 columns">
+                <form id="config-form">
+                    <div class="row">
+                        <div class="small-4 large-4 columns">
+                            <label>短信文件路径：<input type="text" name="smsFile" checked value="{{configs['smsFile']}}" /></label>
+                        </div>
+                        <div class="small-3 large-3 columns">
+                            <label>若快账号：<input type="text" name="ruokuaiUser" checked value="{{configs['ruokuaiUser']}}" /></label>
+                        </div>
+                        <div class="small-3 large-3 columns">
+                            <label>若快密码：<input type="password" name="ruokuaiPassword" checked value="{{configs['ruokuaiPassword']}}" /></label>
+                        </div>
+                        <div class="small-2 large-2 columns">
+                            <label>线程：<input type="number" onchange="setThreadNum(parseInt(this.value))" name="threadNum" value="{{configs['threadNum']}}" /></label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="small-12 large-12 columns">
+                            <button class="button">保存</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="box operate">
+        <form id="func-form">
+        </form>
+        <textarea style="width: 60em;overflow: auto" class="auto-height" name="items" id="items" rows="1" placeholder="数据，多个分行"></textarea>
+        <button class="button" data-run="false" id="run-all">开始</button>
+    </div>
+    <div id="logs"></div>
+</div>
+
+<div id="log-tpl" style="display: none">
+    <div id="log-wrapper_{id}" class="box log-wrapper">
+        <div class="log-info">
+            <span class="log-id">#{id}</span>
+            <span class="log-title">{data}</span>
+            <div class="log-operate">
+                <button data-id="{id}" data-items="{data}" data-run="false" class="button run">开始</button>
+            </div>
+        </div>
+        <form class="input-form" data-id="{id}">
+            <input type="hidden" name="id", value="{id}" />
+            <input type="hidden" name="app", value="{{appName}}" />
+            <input type="hidden" name="key", value="smsvcode" />
+            <input type="text" name="value" placeholder="输入内容" />
+            <button class="button">提交</button>
+        </form>
+        <div data-offset="-1" data-id="{id}" data-autoscrolllog="true" id="log_{id}" class="log"></div>
+    </div>
+</div>
+
+<script>
+logTimer = 0;
+logQuery = {};
+
+getLog = function() {
+    logTimer = setInterval(function(){
+        $('#logs .log').each(function(index, el) {
+            logQuery[$(this).data('id')] = $(this).data('offset');
+        });
+
+        $.ajax({
+            url: '/log',
+            type: 'get',
+            dataType: 'json',
+            timeout: 1000,
+            data: {app: appName ,query: JSON.stringify(logQuery)}
+        })
+        .done(function(result) {
+            for (var x in result) {
+                var html = '';
+                var logBox = $('#log_' + x);
+
+                if (logBox.length > 0) {
+                    for (var i in result[x]['logs']) {
+                        html += '<p>'+ Ycom.htmlEncode(result[x]['logs'][i]) +'</p>';
+                    }
+
+                    logBox.data('offset', result[x]['offset'] + result[x]['logs'].length);
+                    logBox.append(html);
+                    if (logBox.data('autoscrolllog')) {
+                        logBox.scrollTop(logBox[0].scrollHeight);
+                    }
+                }
+            }
+        })
+        .fail(function() {
+        })
+        .always(function() {
+        });
+    }, 1000);
+}
+
+startAll = function() {
+    runButtons = $('#logs .run');
+    startOne('error', '__start__');
+    startOne('retry', '__start__');
+    startOne('success', '__start__');
+
+    for (var i = 0; i < runButtons.length; ++i) {
+        setTimeout((function(i) {
+            return function() {
+                var button = runButtons.get(i);
+                if (!$(button).data('run')) {
+                    runButtons.get(i).click();
+                }
+            };
+        })(i), i * 100);
+    }
+}
+
+stopAll = function() {
+    runButtons = $('#logs .run');
+    for (var i = 0; i < runButtons.length; ++i) {
+        setTimeout((function(i) {
+            return function() {
+                var button = runButtons.get(i);
+                if ($(button).data('run')) {
+                    button.click();
+                }
+            };
+        })(i), i * 100);
+    }
+
+    // clearInterval(logTimer);
+}
+
+startOne = function(id, dataStr) {
+    data = $('#func-form').serializeJson();
+    data.id = id;
+    data.data = dataStr;
+
+    $.ajax({
+        url: 'start',
+        type: 'post',
+        dataType: 'html',
+        timeout: 500000,
+        data: data,
+    })
+    .done(function(result) {
+        if (result) {
+            $('.run[data-id='+ result +']').click();
+        }
+    })
+    .fail(function() {
+        console.log('执行有误');
+    })
+    .always(function() {
+    });
+
+
+    $('#run-all').data('run', true);
+    $('#run-all').text('停止');
+}
+
+communicate = function(id, key, value) {
+    $.ajax({
+        url: 'communicate',
+        type: 'post',
+        dataType: 'json',
+        timeout: 1000,
+        data: {id: id, key: key, value: value},
+    })
+    .done(function(result) {
+    })
+    .fail(function() {
+        alert('网络错误');
+    })
+    .always(function() {
+    });
+}
+
+stopOne = function(id) {
+    communicate(id, 'run', 'false');
+
+    var runOne = false;
+    var runButtons = $('#logs .run');
+
+    for (var i = 0; i < runButtons.length; ++i) {
+        runOne = $(runButtons.get(i)).data('run');
+        if (runOne) {
+            break;
+        }
+    }
+
+    if (!runOne) {
+        $('#run-all').data('run', false);
+        $('#run-all').text('开始');
+        // clearInterval(logTimer);
+    }
+}
+
+$(function(){
+    logBoxTpl = $('#log-tpl').html();
+
+    $('.auto-height').bind('input propertychange change', function(e){
+          $(this).height(0);
+          $(this).outerHeight($(this)[0].scrollHeight+2);
+    });
+
+    $('#run-all').click(function(event) {
+        if ($(this).data('run')) {
+            stopAll();
+        } else {
+            var rows = $.trim($('#items').val()).split('\n');
+
+            var thread = threadNum;
+
+            var works = Ycom.divideArray(rows, 0, rows.length, thread);
+            var data = [];
+            for (var x in works) {
+                if (works[x].length < 1) {
+                    continue;
+                }
+                data.push($.trim(works[x].join('\n')));
+            }
+
+            html = '';
+            html += Ycom.formatStr(logBoxTpl, {
+                id: 'error',
+                data: '总错误日志',
+            });
+
+            html += Ycom.formatStr(logBoxTpl, {
+                id: 'retry',
+                data: '需要重试条目',
+            });
+
+            html += Ycom.formatStr(logBoxTpl, {
+                id: 'success',
+                data: '成功条目',
+            });
+
+            for (var i = 0; i < data.length; ++i) {
+                if ($.trim(data[i])) {
+                    html += Ycom.formatStr(logBoxTpl, {
+                        id: i + 1,
+                        data: data[i],
+                    });
+                }
+            }
+
+            $('#logs').html(html);
+            $('form[data-id=error]').remove();
+            $('button[data-id=error]').remove();
+            $('form[data-id=retry]').remove();
+            $('button[data-id=retry]').remove();
+            $('form[data-id=success]').remove();
+            $('button[data-id=success]').remove();
+            $('.log').scroll(function() {
+                var preservedHeight = $(this).height() + 10,
+                    scrollHeight    = $(this)[0].scrollHeight,
+                    scrollTop       = $(this).scrollTop();
+
+                if (scrollTop + preservedHeight > scrollHeight) {
+                    $(this).data('autoscrolllog', true)
+                } else {
+                    $(this).data('autoscrolllog', false)
+                }
+            });
+
+            startAll();
+        }
+    });
+
+    $(document).on('click', '.run', function(event) {
+        if ($(this).data('run')) {
+            $(this).data('run', false);
+            $(this).text('开始');
+
+            stopOne($(this).data('id'));
+        } else {
+            $(this).data('run', true);
+            $(this).text('停止');
+
+            startOne($(this).data('id'), $(this).data('items'));
+        }
+    });
+
+    $(document).on('submit', '.input-form', function(event) {
+        $.ajax({
+            url: 'communicate',
+            type: 'post',
+            dataType: 'json',
+            timeout: 1000,
+            data: $(this).serialize()
+        })
+        .done(function(result) {
+        })
+        .fail(function() {
+            alert('网络错误');
+        })
+        .always(function() {
+        });
+
+        return false;
+    });
+
+    $('#config-form').submit(function(event) {
+        $.ajax({
+            url: '/saveConfig',
+            type: 'post',
+            dataType: 'json',
+            timeout: 1000,
+            data: $(this).serialize()
+        })
+        .done(function(result) {
+            alert(result.info)
+        })
+        .fail(function() {
+            alert('网络错误');
+        })
+        .always(function() {
+        });
+
+        return false;
+    });
+
+    $('#app-config-form').submit(function(event) {
+        $.ajax({
+            url: 'saveConfig',
+            type: 'post',
+            dataType: 'json',
+            timeout: 1000,
+            data: $(this).serialize()
+        })
+        .done(function(result) {
+            alert(result.info)
+        })
+        .fail(function() {
+            alert('网络错误');
+        })
+        .always(function() {
+        });
+
+        return false;
+    });
+
+    getLog();
+});
+
+</script>
+</body>
+</html>

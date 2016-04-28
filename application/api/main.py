@@ -57,11 +57,11 @@ class Main(application.common.main.Main):
         return '反馈完成'
 
     def recordLog(self, text, workId=None, prefix=''):
-        super(Main, self).recordLog('[app] ' + text, workId, prefix)
+        super(Main, self).recordLog(text, workId, prefix)
         return ''
 
     def recordError(self, text, dataStr=''):
-        super(Main, self).recordError('[app] ' + text, dataStr)
+        super(Main, self).recordError(text, dataStr)
         return ''
 
     def recordRetry(self, text, dataStr=''):

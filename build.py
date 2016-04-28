@@ -38,6 +38,7 @@ def remove(files, show = False):
 
 def md5(file):
     hashMd5 = hashlib.md5()
+
     with open(file, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hashMd5.update(chunk)
@@ -70,9 +71,9 @@ includeFiles = [(file, file) for file in [
     'application/api/log/.keep',
     'application/api/tpl/index.html',
 
-    'application/qianbao/data/.keep',
-    'application/qianbao/log/.keep',
-    'application/qianbao/tpl/index.html',
+    'application/ruiyou/data/.keep',
+    'application/ruiyou/log/.keep',
+    'application/ruiyou/tpl/index.html',
 ]]
 
 includeFiles.append(('build_extra_files/msvcr100.dll', 'msvcr100.dll'))
@@ -80,7 +81,7 @@ includeFiles.append(('build_extra_files/msvcr100.dll', 'msvcr100.dll'))
 packages = [
     'application.common',
     'application.api',
-    'application.qianbao',
+    'application.ruiyou',
 
     'utils',
     'vendors',
@@ -152,7 +153,7 @@ try:
     with open(checkSumJsonFile, 'r') as f:
         lastCheckSum = json.load(f)
 except:
-    pass
+    open(checkSumJsonFile, 'w').write('{}')
 
 dateTime = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
 fullZipFile = '../'+ NAME +'_v'+ VERSION +'_full_'+ dateTime +'.zip'
@@ -160,7 +161,7 @@ updateZipFile = '../'+ NAME +'_v'+ VERSION +'_update_'+ dateTime +'.zip'
 
 with zipfile.ZipFile(fullZipFile, 'w', zipfile.ZIP_DEFLATED) as fFull:
     with zipfile.ZipFile(updateZipFile, 'w', zipfile.ZIP_DEFLATED) as fUpdate:
-        for file in allFiles('.', '*.*'):
+        for file in (list(allFiles('.', '*.*')) + list(allFiles('.', '.keep'))):
             if checkSumJsonFile in file:
                 continue
 

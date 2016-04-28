@@ -9,6 +9,7 @@ Httplib
 @email: work.purocean@outlook.com
 """
 
+import ssl
 import gzip
 import socket
 import urllib.request, urllib.parse, urllib.error
@@ -16,17 +17,21 @@ import http.cookiejar
 import http.client
 
 class Httplib:
-    def __init__(self, timeout = 30, addDefHeaders = True, debug = False):
+    def __init__(self, timeout = 30, headers=None, debug=False):
         self.response = None
 
         socket.setdefaulttimeout(timeout)
         self.cj = http.cookiejar.CookieJar()
+        ssl._create_default_https_context = ssl._create_unverified_context
         self.__opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cj))
         urllib.request.install_opener(self.__opener)
 
         if debug:
             http.client.HTTPConnection.debuglevel = 1
-        if addDefHeaders:
+
+        if headers:
+            self.__opener.addheaders = headers
+        else:
             self.__addDefHeaders()
 
     def __error(self, e):

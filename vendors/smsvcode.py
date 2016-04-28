@@ -5,9 +5,12 @@ import os
 import re
 import csv
 
-def get(smsFile, phoneNumber, lastVcode=None):
+def get(smsFile, phoneNumber, lastVcode=None, match=None):
     if not os.path.isfile(smsFile):
         return False
+
+    if match == None:
+        match = r'\d{5,8}'
 
     phoneNumberCol = 3
     textCol = 4
@@ -21,7 +24,7 @@ def get(smsFile, phoneNumber, lastVcode=None):
         if sms[phoneNumberCol] != phoneNumber:
             continue
 
-        vcode = re.findall(r'\d{5,8}', sms[4])
+        vcode = re.findall(match, sms[4])
         if vcode:
             if vcode[0] != lastVcode:
                 return vcode[0]

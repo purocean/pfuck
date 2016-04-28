@@ -1,8 +1,10 @@
+# coding: utf-8
+# cython: language_level=3, boundscheck=False
+
 import os
 import time
 import json
 
-# from application import common as app
 import utils.config
 import utils.file
 import utils.httplib
@@ -11,9 +13,8 @@ import utils.storage
 import utils.communicate
 import vendors.smsvcode
 
-
-APP_NAME = 'common'
-APP_TITLE = 'FUCK'
+APP_NAME = 'guomei'
+APP_TITLE = '国美'
 
 TPL_DIR = os.getcwd() + '/application/' + APP_NAME + '/tpl/'
 LOG_DIR = os.getcwd() + '/application/' + APP_NAME + '/log/'

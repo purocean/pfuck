@@ -12,8 +12,8 @@ import utils.communicate
 import vendors.smsvcode
 
 
-APP_NAME = 'common'
-APP_TITLE = 'FUCK'
+APP_NAME = 'ruiyou'
+APP_TITLE = '瑞优'
 
 TPL_DIR = os.getcwd() + '/application/' + APP_NAME + '/tpl/'
 LOG_DIR = os.getcwd() + '/application/' + APP_NAME + '/log/'

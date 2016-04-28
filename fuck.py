@@ -7,12 +7,12 @@ monkey.patch_all()
 import bottle
 import webbrowser
 
-import application.api.router
 import application.common.router
-# import application.qianbao.router
+import application.api.router
+import application.ruiyou.router
 
-# debug = False
-debug = True
+debug = False
+# debug = True
 
 port = '8099'
 

@@ -22,6 +22,9 @@ class Main(object):
     def setTasks(self, tasks):
         self.setCommunicate('tasks', json.dumps(tasks))
 
+    def getTasks(self):
+        return json.loads(self.getCommunicate('tasks', '[]'))
+
     def clearTasks(self):
         self.setCommunicate('tasks', '[]')
 
@@ -39,7 +42,7 @@ class Main(object):
 
             return vcode
 
-    def getSmsVcode(self, phoneNum):
+    def getSmsVcode(self, phoneNum, match=None):
         vcodeFromCommunicate = self.getCommunicate('smsvcode')
 
         if vcodeFromCommunicate:
@@ -48,7 +51,7 @@ class Main(object):
         else:
             smsFile = Main().getConfig('smsFile', 'sms.txt')
             lastVcode = self.getCommunicate('lastsmsvcode')
-            vcode = vendors.smsvcode.get(smsFile, phoneNum, lastVcode)
+            vcode = vendors.smsvcode.get(smsFile, phoneNum, lastVcode, match)
             if vcode == False:
                 self.recordLog('短信文件：'+smsFile+'不存在！')
                 return False
@@ -58,6 +61,15 @@ class Main(object):
                     return vcode
 
         return False
+
+    def waitSmsVcode(self, phoneNum, match=None):
+
+        smsvcode = self.tryDo(lambda: self.getSmsVcode(phoneNum, match), '收取短信验证码', 70)
+        if not smsvcode:
+            self.recordRetry('收取短信验证码超时')
+
+        return smsvcode
+
 
     def reportVcodeError(self, imgId):
         user = Main().getConfig('ruokuaiUser')
@@ -88,6 +100,9 @@ class Main(object):
         return False
 
     def recordLog(self, text, workId=None, prefix=None):
+        if type(text) != type(''):
+            text = str(text)
+
         if workId == None:
             workId = self.workId
 
@@ -97,6 +112,8 @@ class Main(object):
         self.recordLog(text)
         self.recordLog('\n', 'error', prefix='')
         self.recordLog('[' + self.workId +'] ' + ' <' + text + '>\n' + taskStr, 'error')
+
+        raise
 
     def recordRetry(self, text, taskStr=''):
         self.recordLog(taskStr, 'retry', prefix='')
@@ -123,3 +140,13 @@ class Main(object):
             workId = self.workId
 
         return utils.logger.readRecent(self.logDir, workId, offset)
+
+    def tryDo(self, doing, text='*', times=10):
+        result = False
+        for x in range(times):
+            self.recordLog(text + '>>' + str(x + 1))
+            result = doing()
+            if result != False:
+                break
+            time.sleep(1)
+        return result
