@@ -5,6 +5,9 @@ __pycache__
 *.sublime-project
 build
 dist
+cache
+*.pyd
+*.c
 *.log
 
 **/data/*.json

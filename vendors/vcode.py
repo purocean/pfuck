@@ -3,8 +3,8 @@
 
 from .ruokuai import RClient
 
-softId = '53089'
-softKey = '1e3caa0b568b450ebd25e33526a7c294'
+softId = ''
+softKey = ''
 
 def get(user, password, img, type=3000):
     rc = RClient(user, password, softId, softKey)
